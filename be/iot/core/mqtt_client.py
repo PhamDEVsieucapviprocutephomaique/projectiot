@@ -57,6 +57,7 @@ def start_mqtt():
         history_client = mqtt.Client()
         history_client.on_connect = on_connect_history
         history_client.on_message = on_message_history
+        history_client.username_pw_set("anh123", "1234")
         history_client.connect("broker.hivemq.com", 1883, 60)
         history_client.loop_start()
         print("History MQTT Client started")
@@ -64,6 +65,7 @@ def start_mqtt():
         sensor_client = mqtt.Client()
         sensor_client.on_connect = on_connect_sensor
         sensor_client.on_message = on_message_sensor
+        history_client.username_pw_set("anh123", "1234")
         sensor_client.connect("broker.hivemq.com", 1883, 60)
         sensor_client.loop_start()
         print("Sensor MQTT Client started")

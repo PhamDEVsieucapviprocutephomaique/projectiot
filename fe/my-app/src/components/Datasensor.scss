@@ -14,10 +14,42 @@
     }
 }
 
-.search-container {
+.controls-container {
     display        : flex;
+    justify-content: space-between;
+    align-items    : center;
     margin-bottom  : 20px;
-    justify-content: center;
+    flex-wrap      : wrap;
+    gap            : 15px;
+}
+
+.sort-controls {
+    display    : flex;
+    align-items: center;
+    gap        : 10px;
+
+    label {
+        font-weight: bold;
+        color      : #495057;
+    }
+
+    .sort-select,
+    .sort-order-select {
+        padding         : 8px 12px;
+        border          : 1px solid #ddd;
+        border-radius   : 4px;
+        background-color: white;
+        cursor          : pointer;
+
+        &:focus {
+            outline     : none;
+            border-color: #4a90e2;
+        }
+    }
+}
+
+.search-container {
+    display: flex;
 
     .search-input {
         padding      : 10px 15px;
@@ -32,17 +64,31 @@
         }
     }
 
+    .search-button,
+    .clear-search-button {
+        padding   : 10px 20px;
+        color     : white;
+        border    : none;
+        cursor    : pointer;
+        font-size : 16px;
+        transition: background-color 0.3s;
+    }
+
     .search-button {
-        padding         : 10px 20px;
         background-color: #4a90e2;
-        color           : white;
-        border          : none;
-        border-radius   : 0 4px 4px 0;
-        cursor          : pointer;
-        font-size       : 16px;
+        border-radius   : 0;
 
         &:hover {
             background-color: #3a80d2;
+        }
+    }
+
+    .clear-search-button {
+        background-color: #6c757d;
+        border-radius   : 0 4px 4px 0;
+
+        &:hover {
+            background-color: #5a6268;
         }
     }
 }
@@ -74,6 +120,11 @@
         color           : #495057;
         position        : sticky;
         top             : 0;
+        cursor          : pointer;
+
+        &:hover {
+            background-color: #e9ecef;
+        }
     }
 
     tr {
@@ -130,6 +181,15 @@
         padding: 10px;
     }
 
+    .controls-container {
+        flex-direction: column;
+        align-items   : stretch;
+    }
+
+    .sort-controls {
+        justify-content: center;
+    }
+
     .search-container {
         flex-direction: column;
 
@@ -139,8 +199,11 @@
             margin-bottom: 10px;
         }
 
-        .search-button {
+        .search-button,
+        .clear-search-button {
+            width        : 100%;
             border-radius: 4px;
+            margin-bottom: 5px;
         }
     }
 

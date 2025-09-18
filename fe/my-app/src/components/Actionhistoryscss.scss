@@ -1,7 +1,6 @@
-// ActionHistory.scss
 .action-history-container {
     font-family     : Arial, sans-serif;
-    max-width       : 1000px;
+    max-width       : 1200px;
     margin          : 0 auto;
     padding         : 20px;
     background-color: #f5f5f5;
@@ -16,15 +15,45 @@
 
 .search-container {
     display        : flex;
+    justify-content: space-between;
+    align-items    : center;
     margin-bottom  : 20px;
-    justify-content: center;
+    gap            : 15px;
+    flex-wrap      : wrap;
+}
+
+.filter-group {
+    display    : flex;
+    gap        : 10px;
+    align-items: center;
+
+    .filter-select {
+        padding      : 10px 15px;
+        border       : 1px solid #ddd;
+        border-radius: 4px;
+        font-size    : 14px;
+        background   : white;
+        cursor       : pointer;
+        min-width    : 180px;
+
+        &:focus {
+            outline     : none;
+            border-color: #4a90e2;
+        }
+    }
+}
+
+.search-group {
+    display    : flex;
+    gap        : 10px;
+    align-items: center;
 
     .search-input {
         padding      : 10px 15px;
         border       : 1px solid #ddd;
-        border-radius: 4px 0 0 4px;
-        width        : 400px;
+        border-radius: 4px;
         font-size    : 16px;
+        width        : 300px;
 
         &:focus {
             outline     : none;
@@ -32,17 +61,31 @@
         }
     }
 
+    .search-button,
+    .reset-button {
+        padding      : 10px 20px;
+        color        : white;
+        border       : none;
+        border-radius: 4px;
+        cursor       : pointer;
+        font-size    : 16px;
+        transition   : background-color 0.3s;
+        white-space  : nowrap;
+    }
+
     .search-button {
-        padding         : 10px 20px;
         background-color: #4a90e2;
-        color           : white;
-        border          : none;
-        border-radius   : 0 4px 4px 0;
-        cursor          : pointer;
-        font-size       : 16px;
 
         &:hover {
             background-color: #3a80d2;
+        }
+    }
+
+    .reset-button {
+        background-color: #6c757d;
+
+        &:hover {
+            background-color: #5a6268;
         }
     }
 }
@@ -90,12 +133,12 @@
         color: #212529;
     }
 
-    .action-on {
+    .action.on {
         color      : #28a745;
         font-weight: bold;
     }
 
-    .action-off {
+    .action.off {
         color      : #dc3545;
         font-weight: bold;
     }
@@ -135,22 +178,51 @@
 }
 
 // Responsive design
+@media (max-width: 1024px) {
+    .search-container {
+        flex-direction: column;
+        align-items   : stretch;
+    }
+
+    .filter-group {
+        flex-wrap      : wrap;
+        justify-content: center;
+
+        .filter-select {
+            flex     : 1;
+            min-width: 150px;
+        }
+    }
+
+    .search-group {
+        justify-content: center;
+
+        .search-input {
+            width    : 100%;
+            max-width: 400px;
+        }
+    }
+}
+
 @media (max-width: 768px) {
     .action-history-container {
         padding: 10px;
     }
 
-    .search-container {
+    .filter-group {
         flex-direction: column;
 
-        .search-input {
-            width        : 100%;
-            border-radius: 4px;
-            margin-bottom: 10px;
+        .filter-select {
+            width: 100%;
         }
+    }
 
-        .search-button {
-            border-radius: 4px;
+    .search-group {
+        flex-direction: column;
+
+        .search-button,
+        .reset-button {
+            width: 100%;
         }
     }
 
