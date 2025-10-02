@@ -11,6 +11,7 @@ const Profile = () => {
           fullname: "",
           studentId: "",
           githubLink: "",
+          postmanLink: "", // thêm postmanLink
           avatarUrl: "",
           pdfFileName: "",
           pdfFileUrl: "",
@@ -176,6 +177,34 @@ const Profile = () => {
                       rel="noopener noreferrer"
                     >
                       {userData.githubLink}
+                    </a>
+                  ) : (
+                    "Chưa có thông tin"
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Thêm Link Postman */}
+            <div className="input-group">
+              <label htmlFor="postmanLink">Link Postman</label>
+              {isEditing ? (
+                <input
+                  type="url"
+                  name="postmanLink"
+                  value={userData.postmanLink}
+                  onChange={handleInputChange}
+                  placeholder="https://www.postman.com/your-link"
+                />
+              ) : (
+                <div className="view-mode-text">
+                  {userData.postmanLink ? (
+                    <a
+                      href={userData.postmanLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {userData.postmanLink}
                     </a>
                   ) : (
                     "Chưa có thông tin"

@@ -1,230 +1,311 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import "../components/Datasensor.scss";
 
 const Datasensor = () => {
   const [sensorData, setSensorData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
+  const [sortAttribute, setSortAttribute] = useState("id");
+  const [sortType, setSortType] = useState("desc");
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortType, setSortType] = useState("time");
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [isDefaultView, setIsDefaultView] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/api/datasensor/");
-        const allData = await res.json();
-
-        // Format time to Vietnamese format: YYYY-MM-DD / HH:MM:SS
-        const formattedData = allData.map((item) => ({
-          ...item,
-          time: formatTime(item.time),
-          timestamp: new Date(item.time), // Thêm timestamp để sort theo thời gian
-        }));
-
-        // Mặc định sort theo thời gian mới nhất (desc)
-        const sortedByTime = formattedData.sort(
-          (a, b) => b.timestamp - a.timestamp
-        );
-
-        // Lấy 100 bản ghi mới nhất
-        const recentData = sortedByTime.slice(0, 100);
-
-        // Thêm displayId từ 1-100 theo thứ tự thời gian
-        const dataWithDisplayId = recentData.map((item, index) => ({
-          ...item,
-          displayId: index + 1,
-        }));
-
-        setSensorData(dataWithDisplayId);
-
-        // Nếu là default view, áp dụng sort mặc định
-        if (isDefaultView) {
-          const sorted = sortData(dataWithDisplayId, "time", "desc");
-          setFilteredData(sorted);
-        } else {
-          // Giữ sort hiện tại
-          const sorted = sortData(dataWithDisplayId, sortType, sortOrder);
-          setFilteredData(sorted);
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
-    };
-
-    // Only set up interval if we're in default view
-    let interval;
-    if (isDefaultView) {
-      fetchData();
-      interval = setInterval(fetchData, 5000);
-    } else {
-      fetchData(); // Still fetch once even if not default view
-    }
-
-    return () => clearInterval(interval);
-  }, [sortType, sortOrder, isDefaultView]);
-
-  // Format time from "2025-09-18T22:14:44.267098" to "2025-09-18 / 22:14:44"
-  const formatTime = (timeString) => {
-    if (!timeString) return "";
-
-    try {
-      // Handle ISO format: 2025-09-18T22:14:44.267098
-      if (timeString.includes("T")) {
-        const [datePart, timePart] = timeString.split("T");
-        const cleanTimePart = timePart.split(".")[0]; // Remove milliseconds
-
-        return `${datePart} / ${cleanTimePart}`;
-      }
-
-      // Return original if format is unexpected
-      return timeString;
-    } catch (error) {
-      console.error("Error formatting time:", error);
-      return timeString;
-    }
-  };
-
-  // Function to sort data
-  const sortData = (data, type, order) => {
-    return [...data].sort((a, b) => {
-      let valueA, valueB;
-
-      switch (type) {
-        case "temperature":
-          valueA = parseFloat(a.temperature);
-          valueB = parseFloat(b.temperature);
-          break;
-        case "humidity":
-          valueA = parseFloat(a.humidity);
-          valueB = parseFloat(b.humidity);
-          break;
-        case "light":
-          valueA = parseFloat(a.light);
-          valueB = parseFloat(b.light);
-          break;
-        case "time":
-          valueA = a.timestamp;
-          valueB = b.timestamp;
-          break;
-        case "id":
-        default:
-          valueA = a.displayId;
-          valueB = b.displayId;
-      }
-
-      if (order === "asc") {
-        return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-      } else {
-        return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-      }
-    });
-  };
-
-  // Handle search
-  const handleSearch = () => {
-    if (!searchTerm) {
-      // Reset to default view
-      const sorted = sortData(sensorData, "time", "desc");
-      setFilteredData(sorted);
-      setSortType("time");
-      setSortOrder("desc");
-      setIsDefaultView(true);
-      return;
-    }
-
-    const term = searchTerm.toLowerCase();
-    const filtered = sensorData.filter(
-      (item) =>
-        item.displayId.toString().includes(term) ||
-        item.temperature.toString().includes(term) ||
-        item.humidity.toString().includes(term) ||
-        item.light.toString().includes(term) ||
-        item.time.toLowerCase().includes(term)
-    );
-
-    setFilteredData(filtered);
-    setCurrentPage(1);
-    setIsDefaultView(false);
-  };
-
-  // Clear search and return to default view
-  const clearSearch = () => {
-    setSearchTerm("");
-    const sorted = sortData(sensorData, "time", "desc");
-    setFilteredData(sorted);
-    setSortType("time");
-    setSortOrder("desc");
-    setCurrentPage(1);
-    setIsDefaultView(true);
-  };
-
-  // Handle sort change - instant sorting
-  const handleSortChange = (type) => {
-    let newOrder = "asc";
-
-    // If clicking the same header, toggle order
-    if (sortType === type) {
-      newOrder = sortOrder === "asc" ? "desc" : "asc";
-    }
-
-    setSortType(type);
-    setSortOrder(newOrder);
-
-    // Apply sorting immediately to filteredData
-    const sorted = sortData(filteredData, type, newOrder);
-    setFilteredData(sorted);
-
-    setIsDefaultView(false);
-    setCurrentPage(1);
-  };
+  const [searchType, setSearchType] = useState("id");
+  const [filteredData, setFilteredData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // State for pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 10;
-  const totalPages = Math.ceil(filteredData.length / recordsPerPage);
+  const [recordsPerPage, setRecordsPerPage] = useState(10);
+  const [pageSizeInput, setPageSizeInput] = useState("10");
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Get current records
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredData.slice(
-    indexOfFirstRecord,
-    indexOfLastRecord
+  // Refs để tránh re-render không cần thiết
+  const searchTimeoutRef = useRef(null);
+
+  // Fetch total pages từ API
+  const fetchTotalPages = useCallback(
+    async (pageSize = recordsPerPage) => {
+      try {
+        const res = await fetch(
+          "http://localhost:8000/api/datasensor/countpage/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              page_size: pageSize,
+            }),
+          }
+        );
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        setTotalPages(data.total_pages);
+      } catch (err) {
+        console.error("Error fetching total pages:", err);
+      }
+    },
+    [recordsPerPage]
   );
 
+  // Fetch data với sorting và pagination
+  const fetchData = useCallback(
+    async (
+      attribute = sortAttribute,
+      type = sortType,
+      page = currentPage,
+      pageSize = recordsPerPage
+    ) => {
+      try {
+        setIsLoading(true);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        console.log("API Request parameters:", {
+          attribute: attribute,
+          type: type,
+          page: page,
+          page_size: pageSize,
+        });
+        const res = await fetch("http://localhost:8000/api/datasensor/sort/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            attribute: attribute,
+            type: type,
+            page: page,
+            page_size: pageSize,
+          }),
+        });
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+        const sortedData = await res.json();
+        console.log("📥 DATA RECEIVED for page", page, ":", sortedData);
+        console.log("📊 Data length:", sortedData.length);
+
+        setSensorData(sortedData);
+        setFilteredData(sortedData);
+
+        // Fetch total pages sau khi có data
+        await fetchTotalPages(pageSize);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        // await new Promise((resolve) => setTimeout(resolve, 1000));
+        setIsLoading(false);
+      }
+    },
+    [sortAttribute, sortType, currentPage, recordsPerPage, fetchTotalPages]
+  );
+
+  // Fetch search data từ API search
+  const fetchSearchData = useCallback(
+    async (
+      searchValue,
+      type,
+      page = currentPage,
+      pageSize = recordsPerPage
+    ) => {
+      if (!searchValue.trim()) {
+        fetchData();
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        console.log("API Request parameters:", {
+          search: searchValue,
+          type: type,
+          page: page,
+          page_size: pageSize,
+        });
+        const res = await fetch(
+          "http://localhost:8000/api/datasensor/search/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              search: searchValue,
+              type: type,
+              page: page,
+              page_size: pageSize,
+            }),
+          }
+        );
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+        const searchResults = await res.json();
+        setSensorData(searchResults);
+        setFilteredData(searchResults);
+
+        // Fetch total pages sau khi có data
+        await fetchTotalPages(pageSize);
+      } catch (err) {
+        console.error("Error searching data:", err);
+      } finally {
+        // await new Promise((resolve) => setTimeout(resolve, 1000));
+        setIsLoading(false);
+      }
+    },
+    [fetchData, currentPage, recordsPerPage, fetchTotalPages]
+  );
+
+  // Debounce search
+  const handleSearch = useCallback(
+    (value, type) => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      searchTimeoutRef.current = setTimeout(() => {
+        if (value.trim() === "") {
+          fetchData(sortAttribute, sortType, 1, recordsPerPage);
+        } else {
+          fetchSearchData(value, type, 1, recordsPerPage);
+        }
+        setCurrentPage(1);
+      }, 500);
+    },
+    [fetchData, fetchSearchData, sortAttribute, sortType, recordsPerPage]
+  );
+
+  // Xử lý search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    handleSearch(value, searchType);
+  };
+
+  // Xử lý search type change
+  const handleSearchTypeChange = (e) => {
+    const type = e.target.value;
+    setSearchType(type);
+    if (searchTerm.trim()) {
+      handleSearch(searchTerm, type);
+    }
+  };
+
+  useEffect(() => {
+    // CHỈ FETCH DATA KHI COMPONENT MOUNT
+    fetchData();
+  }, []); // Empty dependency array - chỉ chạy 1 lần
+
+  // Handle sort change
+  const handleSortChange = (attribute, type) => {
+    setSortAttribute(attribute);
+    setSortType(type);
+    setCurrentPage(1);
+    fetchData(attribute, type, 1, recordsPerPage);
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm("");
+    setSearchType("id");
+    setCurrentPage(1);
+    fetchData(sortAttribute, sortType, 1, recordsPerPage);
+  };
+
+  // Sử dụng trực tiếp filteredData (đã được API phân trang)
+  const currentRecords = filteredData;
+
   // Change page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    fetchData(sortAttribute, sortType, pageNumber, recordsPerPage);
+  };
 
   // Generate page numbers
-  const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageNumbers.push(i);
-  }
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
 
-  // Function to get sort indicator
-  const getSortIndicator = (type) => {
-    if (sortType !== type) return "▲▼";
-    return sortOrder === "asc" ? "▲" : "▼";
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) pageNumbers.push(i);
+    } else {
+      pageNumbers.push(1);
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+      if (currentPage <= 3) endPage = 4;
+      else if (currentPage >= totalPages - 2) startPage = totalPages - 3;
+
+      if (startPage > 2) pageNumbers.push("...");
+      for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
+      if (endPage < totalPages - 1) pageNumbers.push("...");
+      if (totalPages > 1) pageNumbers.push(totalPages);
+    }
+    return pageNumbers;
+  };
+
+  const pageNumbers = getPageNumbers();
+
+  // Handle page size input change
+  const handlePageSizeInputChange = (e) => {
+    setPageSizeInput(e.target.value);
+  };
+
+  const handlePageSizeBlur = (e) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 10) {
+      setRecordsPerPage(value);
+      setPageSizeInput(value.toString());
+      setCurrentPage(1);
+      fetchData(sortAttribute, sortType, 1, value);
+    } else {
+      setPageSizeInput(recordsPerPage.toString());
+    }
+  };
+
+  const handlePageSizeKeyPress = (e) => {
+    if (e.key === "Enter") {
+      const value = parseInt(e.target.value);
+      if (!isNaN(value) && value >= 10) {
+        setRecordsPerPage(value);
+        setPageSizeInput(value.toString());
+        setCurrentPage(1);
+        fetchData(sortAttribute, sortType, 1, value);
+        e.target.blur();
+      }
+    }
+  };
+
+  const incrementPageSize = () => {
+    const newSize = recordsPerPage + 1;
+    setRecordsPerPage(newSize);
+    setPageSizeInput(newSize.toString());
+    setCurrentPage(1);
+    fetchData(sortAttribute, sortType, 1, newSize);
+  };
+
+  const decrementPageSize = () => {
+    const newSize = Math.max(10, recordsPerPage - 1);
+    setRecordsPerPage(newSize);
+    setPageSizeInput(newSize.toString());
+    setCurrentPage(1);
+    fetchData(sortAttribute, sortType, 1, newSize);
+  };
+
+  // Copy time to clipboard
+  const copyTime = (time) => {
+    navigator.clipboard.writeText(time).then(() => {
+      console.log("Time copied:", time);
+    });
   };
 
   return (
     <div className="sensor-data-container">
-      <h1>Data Sensor</h1>
-
       <div className="controls-container">
         <div className="sort-controls">
           <label>Sort by: </label>
           <select
-            value={sortType}
-            onChange={(e) => {
-              const type = e.target.value;
-              setSortType(type);
-              setIsDefaultView(false);
-              // Apply sorting immediately
-              const sorted = sortData(filteredData, type, sortOrder);
-              setFilteredData(sorted);
-            }}
             className="sort-select"
+            value={sortAttribute}
+            onChange={(e) => handleSortChange(e.target.value, sortType)}
+            disabled={isLoading}
           >
             <option value="id">ID</option>
             <option value="temperature">Temperature</option>
@@ -234,35 +315,52 @@ const Datasensor = () => {
           </select>
 
           <select
-            value={sortOrder}
-            onChange={(e) => {
-              const order = e.target.value;
-              setSortOrder(order);
-              setIsDefaultView(false);
-              // Apply sorting immediately
-              const sorted = sortData(filteredData, sortType, order);
-              setFilteredData(sorted);
-            }}
             className="sort-order-select"
+            value={sortType}
+            onChange={(e) => handleSortChange(sortAttribute, e.target.value)}
+            disabled={isLoading}
           >
             <option value="asc">Ascending</option>
             <option value="desc">Descending</option>
           </select>
+
+          {isLoading && (
+            <span style={{ marginLeft: "10px", color: "#666" }}>
+              Loading...
+            </span>
+          )}
         </div>
 
         <div className="search-container">
+          <select
+            className="search-type-select"
+            value={searchType}
+            onChange={handleSearchTypeChange}
+            disabled={isLoading}
+          >
+            <option value="id">ID</option>
+            <option value="temperature">Temperature</option>
+            <option value="humidity">Humidity</option>
+            <option value="light">Light</option>
+            <option value="time">Time</option>
+          </select>
+
           <input
             type="text"
-            placeholder="Search (ID, Temperature, Humidity, Light, or Time)"
+            placeholder={`Search by ${searchType}...`}
             className="search-input"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+            onChange={handleSearchChange}
+            disabled={isLoading}
           />
-          <button className="search-button" onClick={handleSearch}>
+          <button className="search-button" disabled={isLoading}>
             Search
           </button>
-          <button className="clear-search-button" onClick={clearSearch}>
+          <button
+            className="clear-search-button"
+            onClick={clearSearch}
+            disabled={isLoading}
+          >
             Clear
           </button>
         </div>
@@ -272,66 +370,147 @@ const Datasensor = () => {
         <table className="sensor-table">
           <thead>
             <tr>
-              <th onClick={() => handleSortChange("id")}>
-                ID {getSortIndicator("id")}
+              <th>
+                ID {sortAttribute === "id" && (sortType === "asc" ? "↑" : "↓")}
               </th>
-              <th onClick={() => handleSortChange("temperature")}>
-                Temperature (°C) {getSortIndicator("temperature")}
+              <th>
+                Temperature (°C){" "}
+                {sortAttribute === "temperature" &&
+                  (sortType === "asc" ? "↑" : "↓")}
               </th>
-              <th onClick={() => handleSortChange("humidity")}>
-                Humidity (%) {getSortIndicator("humidity")}
+              <th>
+                Humidity (%){" "}
+                {sortAttribute === "humidity" &&
+                  (sortType === "asc" ? "↑" : "↓")}
               </th>
-              <th onClick={() => handleSortChange("light")}>
-                Light (mits) {getSortIndicator("light")}
+              <th>
+                Light (mits){" "}
+                {sortAttribute === "light" && (sortType === "asc" ? "↑" : "↓")}
               </th>
-              <th onClick={() => handleSortChange("time")}>
-                Time {getSortIndicator("time")}
+              <th>
+                Time{" "}
+                {sortAttribute === "time" && (sortType === "asc" ? "↑" : "↓")}
               </th>
+              <th>Copy</th>
             </tr>
           </thead>
           <tbody>
             {currentRecords.map((item, index) => (
-              <tr key={`${item.id}-${index}`}>
-                <td>{item.displayId}</td>
+              <tr key={`${item.id || index}-${item.time}`}>
+                <td>
+                  {item.id || index + 1 + (currentPage - 1) * recordsPerPage}
+                </td>
                 <td>{item.temperature}</td>
                 <td>{item.humidity}</td>
                 <td>{item.light}</td>
                 <td>{item.time}</td>
+                <td>
+                  <button
+                    className="copy-time-btn"
+                    onClick={() => copyTime(item.time)}
+                    disabled={isLoading}
+                  >
+                    Copy
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination controls */}
-      <div className="pagination">
-        <button
-          className="pagination-button"
-          onClick={() => paginate(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </button>
+      <div className="pagination-container">
+        <div className="pagination-info">
+          Showing{" "}
+          {filteredData.length === 0
+            ? 0
+            : (currentPage - 1) * recordsPerPage + 1}{" "}
+          to{" "}
+          {Math.min(
+            currentPage * recordsPerPage,
+            (currentPage - 1) * recordsPerPage + filteredData.length
+          )}{" "}
+          of {totalPages * recordsPerPage} entries
+          {searchTerm && (
+            <span className="search-info">
+              {" "}
+              | Searching: "{searchTerm}" in {searchType}
+            </span>
+          )}
+        </div>
 
-        {pageNumbers.map((number) => (
-          <button
-            key={number}
-            className={`pagination-button ${
-              currentPage === number ? "active" : ""
-            }`}
-            onClick={() => paginate(number)}
-          >
-            {number}
-          </button>
-        ))}
+        <div className="pagination-controls">
+          <div className="page-size-selector">
+            <label>Show: </label>
+            <div className="page-size-control">
+              <button
+                className="page-size-btn"
+                onClick={decrementPageSize}
+                disabled={recordsPerPage <= 10 || isLoading}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min="10"
+                value={pageSizeInput}
+                onChange={handlePageSizeInputChange}
+                onFocus={(e) => e.target.select()}
+                onBlur={handlePageSizeBlur}
+                onKeyPress={handlePageSizeKeyPress}
+                className="page-size-input"
+                disabled={isLoading}
+              />
+              <button
+                className="page-size-btn"
+                onClick={incrementPageSize}
+                disabled={isLoading}
+              >
+                +
+              </button>
+            </div>
+            <span>entries </span>
+          </div>
 
-        <button
-          className="pagination-button"
-          onClick={() => paginate(currentPage + 1)}
-          disabled={currentPage === totalPages || totalPages === 0}
-        >
-          Next
-        </button>
+          <div className="pagination-buttons">
+            <button
+              className="pagination-button"
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1 || isLoading}
+            >
+              Previous
+            </button>
+
+            {pageNumbers.map((number, index) =>
+              number === "..." ? (
+                <span key={`ellipsis-${index}`} className="pagination-ellipsis">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={number}
+                  className={`pagination-button ${
+                    currentPage === number ? "active" : ""
+                  }`}
+                  onClick={() => paginate(number)}
+                  disabled={isLoading}
+                >
+                  {number}
+                </button>
+              )
+            )}
+
+            <button
+              className="pagination-button"
+              onClick={() => paginate(currentPage + 1)}
+              disabled={
+                currentPage === totalPages || totalPages === 0 || isLoading
+              }
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

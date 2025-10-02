@@ -1,0 +1,258 @@
+// darkmode.scss
+.dark-mode {
+  * {
+    background-color: rgb(53, 50, 50) !important;
+    color: white !important;
+  }
+
+  input,
+  select,
+  textarea {
+    background-color: #333 !important;
+    color: white !important;
+    border: 1px solid #666 !important;
+  }
+
+  input::placeholder {
+    color: #ccc !important;
+  }
+
+  button {
+    background-color: #444 !important;
+    color: white !important;
+    border: 1px solid #666 !important;
+
+    &:hover:not(:disabled) {
+      background-color: #555 !important;
+    }
+
+    &:disabled {
+      background-color: #333 !important;
+      color: #888 !important;
+    }
+  }
+
+  table {
+    background-color: #333 !important;
+    color: white !important;
+
+    th,
+    td {
+      background-color: #333 !important;
+      color: white !important;
+      border-color: #555 !important;
+    }
+
+    tr:hover {
+      background-color: #444 !important;
+    }
+  }
+
+  // Home component
+  .environment-monitor {
+    background-color: rgb(53, 50, 50) !important;
+  }
+
+  .monitor-header {
+    background-color: #333 !important;
+    border-bottom: 2px solid #555 !important;
+
+    .header-item {
+      color: white !important;
+      border-right: 1px solid #555 !important;
+
+      &.device-header {
+        background-color: #2c3e50 !important;
+        color: #3498db !important;
+      }
+
+      &.light-header {
+        background-color: #34495e !important;
+        color: #f39c12 !important;
+      }
+
+      &.humidity-header {
+        background-color: #2c3e50 !important;
+        color: #27ae60 !important;
+      }
+
+      &.temperature-header {
+        background-color: #2c3e50 !important;
+        color: #e74c3c !important;
+      }
+    }
+  }
+
+  .monitor-content {
+    background-color: rgb(53, 50, 50) !important;
+  }
+
+  .content-column {
+    border-right: 1px solid #555 !important;
+
+    &.device-column {
+      background-color: #2c3e50 !important;
+    }
+  }
+
+  .toggle-label {
+    color: white !important;
+  }
+
+  .toggle-btn {
+    background: #444 !important;
+    border: 2px solid #666 !important;
+
+    &.active {
+      background: #27ae60 !important;
+      border-color: #27ae60 !important;
+    }
+
+    .toggle-text {
+      color: #ccc !important;
+    }
+
+    .toggle-slider {
+      background: #ddd !important;
+    }
+  }
+
+  .data-display {
+    border: 2px dashed #666 !important;
+  }
+
+  // Datasensor component
+  .sensor-data-container {
+    background-color: rgb(53, 50, 50) !important;
+
+    .controls-container {
+      background-color: #2c3e50 !important;
+    }
+
+    .table-container {
+      background-color: #333 !important;
+
+      .sensor-table {
+        th {
+          background-color: #34495e !important;
+          color: white !important;
+        }
+
+        tr:hover {
+          background-color: #3d5166 !important;
+        }
+      }
+    }
+
+    .pagination-container {
+      background-color: #2c3e50 !important;
+    }
+  }
+
+  // Actionhistory component
+  .action-history-container {
+    background-color: rgb(53, 50, 50) !important;
+
+    h1 {
+      color: white !important;
+    }
+
+    .search-container {
+      .filter-select,
+      .search-input {
+        background-color: #333 !important;
+        color: white !important;
+        border: 1px solid #666 !important;
+      }
+    }
+
+    .table-container {
+      background-color: #333 !important;
+
+      .action-table {
+        th {
+          background-color: #34495e !important;
+          color: white !important;
+        }
+
+        tr:hover {
+          background-color: #3d5166 !important;
+        }
+      }
+    }
+
+    .pagination-container {
+      background-color: #2c3e50 !important;
+    }
+  }
+
+  // Scrollbars
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #333;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #888;
+  }
+}
+
+// Dark mode toggle button styles
+.dark-mode-toggle {
+  position: fixed;
+  top: 65px;
+  right: 20px;
+  z-index: 1000;
+
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  // Dark mode specific styles
+  .dark-mode & {
+    background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+    box-shadow: 0 4px 15px rgba(255, 126, 95, 0.3);
+
+    &:hover {
+      box-shadow: 0 6px 20px rgba(255, 126, 95, 0.4);
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .dark-mode-toggle {
+    top: 10px;
+    right: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+}

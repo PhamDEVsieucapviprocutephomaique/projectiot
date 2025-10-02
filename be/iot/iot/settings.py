@@ -91,11 +91,11 @@ WSGI_APPLICATION = 'iot.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'databaseiot',  # Tên database
-        'USER': 'postgres',  # User PostgreSQL
-        'PASSWORD': '02112004',  # Mật khẩu 
+        'NAME': 'iot_database',  # Tên database
+        'USER': 'iot_user',  # User PostgreSQL
+        'PASSWORD': '28092004',  # Mật khẩu 
         'HOST': 'localhost',  # Nếu dùng Docker, vẫn là localhost
-        'PORT': '5432',  # Cổng mặc định
+        'PORT': '5444',  # Cổng mặc định
     }
 }
 
@@ -121,14 +121,15 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
+
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
 
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_TZ = False
+# USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
