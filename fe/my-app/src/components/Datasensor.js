@@ -78,8 +78,6 @@ const Datasensor = () => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const sortedData = await res.json();
-        console.log("📥 DATA RECEIVED for page", page, ":", sortedData);
-        console.log("📊 Data length:", sortedData.length);
 
         setSensorData(sortedData);
         setFilteredData(sortedData);

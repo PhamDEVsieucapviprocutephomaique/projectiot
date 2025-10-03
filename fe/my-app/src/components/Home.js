@@ -20,6 +20,46 @@ const Home = () => {
     fan: "",
     airConditioner: "",
   });
+  // Thêm useEffect này để fetch device states từ API
+  useEffect(() => {
+    async function fetchInitialDeviceStates() {
+      try {
+        const deviceMap = {
+          led: "device1",
+          fan: "device2",
+          airConditioner: "device3",
+        };
+
+        const newDeviceStates = {};
+
+        for (const [device, apiDevice] of Object.entries(deviceMap)) {
+          const response = await fetch(
+            `http://127.0.0.1:8000/api/historyaction/laster/${apiDevice}`
+          );
+          const data = await response.json();
+          const apiValue = data[apiDevice];
+
+          newDeviceStates[device] = apiValue === "on";
+
+          // Set loading states
+          if (device === "led") {
+            setloadingled(apiValue === "on");
+          } else if (device === "fan") {
+            setloadingfan(apiValue === "on");
+          } else if (device === "airConditioner") {
+            setloadingair(apiValue === "on");
+          }
+        }
+
+        setDeviceStates(newDeviceStates);
+        console.log("Initial device states:", newDeviceStates);
+      } catch (error) {
+        console.error("Error fetching initial device states:", error);
+      }
+    }
+
+    fetchInitialDeviceStates();
+  }, []);
 
   //darkmode
   const [isDarkMode, setIsDarkMode] = useState(() => {

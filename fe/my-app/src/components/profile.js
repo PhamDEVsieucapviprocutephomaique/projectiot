@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../components/Profilescss.scss"; // Assuming you have a CSS file for styling
+
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -11,7 +12,8 @@ const Profile = () => {
           fullname: "",
           studentId: "",
           githubLink: "",
-          postmanLink: "", // thêm postmanLink
+          postmanFileName: "", // đổi từ postmanLink thành postmanFileName
+          postmanFileUrl: "", // đổi từ postmanLink thành postmanFileUrl
           avatarUrl: "",
           pdfFileName: "",
           pdfFileUrl: "",
@@ -63,6 +65,28 @@ const Profile = () => {
     }
   };
 
+  // Thêm hàm xử lý cho file Postman
+  const handlePostmanClick = () => {
+    if (isEditing) {
+      document.getElementById("postman-input").click();
+    }
+  };
+
+  const handlePostmanChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUserData({
+          ...userData,
+          postmanFileName: file.name,
+          postmanFileUrl: reader.result,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setUserData({ ...userData, [name]: value });
@@ -82,6 +106,18 @@ const Profile = () => {
       const a = document.createElement("a");
       a.href = userData.pdfFileUrl;
       a.download = userData.pdfFileName || "bao-cao.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
+  // Thêm hàm download file Postman
+  const handleDownloadPostman = () => {
+    if (userData.postmanFileUrl) {
+      const a = document.createElement("a");
+      a.href = userData.postmanFileUrl;
+      a.download = userData.postmanFileName || "postman-file.json";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -185,32 +221,55 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Thêm Link Postman */}
+            {/* Thay đổi từ Link Postman thành File Postman */}
             <div className="input-group">
-              <label htmlFor="postmanLink">Link Postman</label>
+              <label htmlFor="postmanFile">File Postman</label>
               {isEditing ? (
-                <input
-                  type="url"
-                  name="postmanLink"
-                  value={userData.postmanLink}
-                  onChange={handleInputChange}
-                  placeholder="https://www.postman.com/your-link"
-                />
-              ) : (
-                <div className="view-mode-text">
-                  {userData.postmanLink ? (
-                    <a
-                      href={userData.postmanLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {userData.postmanLink}
-                    </a>
+                <div
+                  className="postman-upload-area editable"
+                  onClick={handlePostmanClick}
+                >
+                  {userData.postmanFileName ? (
+                    <div className="file-selected">
+                      <span className="file-icon">📦</span>
+                      <span className="file-name">
+                        {userData.postmanFileName}
+                      </span>
+                      <span className="click-hint">Click để thay đổi</span>
+                    </div>
                   ) : (
-                    "Chưa có thông tin"
+                    <div className="file-placeholder">
+                      <span className="upload-icon">📁</span>
+                      <span>Click để chọn file Postman</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="postman-download-area">
+                  {userData.postmanFileName ? (
+                    <div
+                      className="file-download"
+                      onClick={handleDownloadPostman}
+                    >
+                      <span className="file-icon">📦</span>
+                      <span className="file-name">
+                        {userData.postmanFileName}
+                      </span>
+                      <span className="download-hint">Click để tải xuống</span>
+                    </div>
+                  ) : (
+                    <div className="no-file">Chưa có file Postman</div>
                   )}
                 </div>
               )}
+
+              <input
+                id="postman-input"
+                type="file"
+                onChange={handlePostmanChange}
+                accept=".json,.postman_collection"
+                className="file-input-hidden"
+              />
             </div>
 
             <div className="input-group">
@@ -273,4 +332,5 @@ const Profile = () => {
     </div>
   );
 };
+
 export default Profile;
