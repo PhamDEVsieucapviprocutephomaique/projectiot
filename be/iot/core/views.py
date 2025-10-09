@@ -1,3 +1,4 @@
+
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -5,7 +6,10 @@ from .models import DataSensor, HistoryAction
 from .serializers import DataSensorSerializer, HistoryActionSerializer
 from django.utils.timezone import localtime
 import json
+import time
 import paho.mqtt.publish as publish
+from django.http import StreamingHttpResponse,HttpResponse
+
 # API lấy tất cả dữ liệu sensor
 class DataSensorViewSet(viewsets.ModelViewSet):
     queryset = DataSensor.objects.all().order_by('id')  
@@ -295,3 +299,40 @@ def countpagehistoryaction(request):
         "total_count": total_count,
         "page_size": page_size
     })
+
+
+
+
+#socket
+
+# @api_view(['GET'])
+def device_status_stream(request):
+    
+    def event_stream():
+        last_ids = {'device1': None, 'device2': None, 'device3': None}
+        
+        while True:
+            try:
+                # KIỂM TRA NHANH HƠN
+                for device in ['device1', 'device2', 'device3']:
+                    latest = HistoryAction.objects.filter(device=device).order_by('-time').first()
+                    if latest and latest.id != last_ids[device]:
+                        last_ids[device] = latest.id
+                        data = json.dumps({
+                            'device': device,
+                            'action': latest.action,
+                            'time': latest.time.strftime("%Y-%m-%d %H:%M:%S")
+                        })
+                        yield f"data: {data}\n\n"
+                
+                time.sleep(0.01)  # 🎯 GIẢM XUỐNG 10ms
+                
+            except Exception as e:
+                print(f"SSE Error: {e}")
+                break
+    
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no' 
+    response['Access-Control-Allow-Origin'] = '*'
+    return response

@@ -298,7 +298,7 @@ const Profile = () => {
                     <div className="file-download" onClick={handleDownloadPdf}>
                       <span className="file-icon">📄</span>
                       <span className="file-name">{userData.pdfFileName}</span>
-                      <span className="download-hint">Click để tải xuống</span>
+                      {/* <span className="download-hint">Click để tải xuống</span> */}
                     </div>
                   ) : (
                     <div className="no-file">Chưa có file báo cáo</div>

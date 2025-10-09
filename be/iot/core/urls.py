@@ -2,13 +2,14 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import DataSensorViewSet, HistoryActionViewSet
 from .views import get_latest_sensor,control_device,get_latest_chart,sort_data,search_data,filter_history,search_history
-from .views import lasterdevice1,lasterdevice2,lasterdevice3,countpagedatasensor,countpagehistoryaction
+from .views import lasterdevice1,lasterdevice2,lasterdevice3,countpagedatasensor,countpagehistoryaction,device_status_stream
 router = DefaultRouter()
 router.register(r'datasensor', DataSensorViewSet, basename='datasensor')
 router.register(r'historyaction', HistoryActionViewSet, basename='historyaction')
 
 urlpatterns = [
     path('device/', control_device),
+    path('device/stream/', device_status_stream),
     path('datasensor/latest/',get_latest_sensor),
     path('datasensor/chartlatest/',get_latest_chart),
     path('datasensor/sort/', sort_data),  # Cả GET và POST

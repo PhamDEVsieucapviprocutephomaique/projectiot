@@ -1,8 +1,7 @@
 import "../components/Homescss.scss";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Chart from "./Chart";
-import "./darkmode.scss"; // Import file darkmode
-// thong bao
+import "./darkmode.scss";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -15,12 +14,10 @@ const Home = () => {
   const [loadingled, setloadingled] = useState(false);
   const [loadingfan, setloadingfan] = useState(false);
   const [loadingair, setloadingair] = useState(false);
-  const [loadingText, setLoadingText] = useState({
-    led: "",
-    fan: "",
-    airConditioner: "",
-  });
-  // Thêm useEffect này để fetch device states từ API
+
+  // const eventSourceRef = useRef(null);
+
+  // ✅ 1. Lấy trạng thái ban đầu khi web load
   useEffect(() => {
     async function fetchInitialDeviceStates() {
       try {
@@ -41,7 +38,6 @@ const Home = () => {
 
           newDeviceStates[device] = apiValue === "on";
 
-          // Set loading states
           if (device === "led") {
             setloadingled(apiValue === "on");
           } else if (device === "fan") {
@@ -61,106 +57,99 @@ const Home = () => {
     fetchInitialDeviceStates();
   }, []);
 
-  //darkmode
+  // ✅ 2. Kết nối SSE để nhận realtime update từ backend
+  useEffect(() => {
+    const eventSource = new EventSource(
+      "http://192.168.70.133:8000/api/device/stream/"
+    );
+
+    eventSource.onopen = () => {
+      console.log("✅ SSE Connected - readyState:", eventSource.readyState);
+    };
+    eventSource.onmessage = (event) => {
+      console.log("🎉 🎉 🎉 FINALLY RECEIVED IN FRONTEND:", event.data);
+
+      const data = JSON.parse(event.data);
+      console.log("📡 Parsed data:", data);
+      const deviceMap = {
+        device1: "led",
+        device2: "fan",
+        device3: "airConditioner",
+      };
+
+      const device = deviceMap[data.device];
+      const isOn = data.action === "on";
+
+      // Cập nhật state khi nhận được từ backend
+      setDeviceStates((prev) => ({ ...prev, [device]: isOn }));
+
+      if (device === "led") {
+        setloadingled(isOn);
+        console.log(`💡 LED ${isOn ? "ON" : "OFF"}`);
+      }
+      if (device === "fan") {
+        setloadingfan(isOn);
+        console.log(`🌀 Fan ${isOn ? "ON" : "OFF"}`);
+      }
+      if (device === "airConditioner") {
+        setloadingair(isOn);
+        console.log(`❄️ AC ${isOn ? "ON" : "OFF"}`);
+      }
+
+      // toast.success(`✅ ${device} đã ${isOn ? "bật" : "tắt"}`, {
+      //   position: "top-right",
+      //   autoClose: 2000,
+      // });
+    };
+    eventSource.onerror = (error) => {
+      console.error(
+        "❌ SSE Error - readyState:",
+        eventSource.readyState,
+        error
+      );
+    };
+  }, []);
+
+  // Dark mode
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem("darkMode");
     return saved ? JSON.parse(saved) : false;
   });
 
-  // Thêm class dark-mode vào body khi toggle và lưu vào localStorage
   useEffect(() => {
     if (isDarkMode) {
       document.body.classList.add("dark-mode");
     } else {
       document.body.classList.remove("dark-mode");
     }
-    // Lưu vào localStorage
     localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
   }, [isDarkMode]);
-  //darkmode
 
-  //
-
+  // ✅ 3. Handle toggle - CHỈ GỬI LỆNH, SSE sẽ tự động cập nhật UI
   const handleDeviceToggle = async (device) => {
     const newState = !deviceStates[device];
-    // setDeviceStates((prev) => ({ ...prev, [device]: newState }));
-    setLoadingText((prev) => ({ ...prev, [device]: "loading..." }));
+
     try {
       const deviceMap = {
         led: "device1",
         fan: "device2",
         airConditioner: "device3",
       };
+
       const payload = { [deviceMap[device]]: newState ? "on" : "off" };
-      await fetch("http://localhost:8000/api/device/", {
+
+      console.log("📤 Sending command:", payload);
+
+      // Gửi lệnh lên backend
+      const response = await fetch("http://192.168.70.133:8000/api/device/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      // Gọi API liên tục cho đến khi giá trị khác
-      const apiUrl = `http://127.0.0.1:8000/api/historyaction/laster/${deviceMap[device]}`;
-      let isValueChanged = false;
-
-      while (!isValueChanged) {
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        const apiValue = data[deviceMap[device]];
-
-        // Kiểm tra nếu giá trị từ API khác với giá trị hiện tại
-
-        if (apiValue !== (!newState ? "on" : "off")) {
-          setDeviceStates((prev) => ({
-            ...prev,
-            [device]: apiValue === "on", // Chuyển "on"/"off" thành boolean
-          }));
-          isValueChanged = true;
-          setLoadingText((prev) => ({ ...prev, [device]: "" }));
-
-          console.log(apiValue);
-          if (device === "led" && apiValue === "on") {
-            setloadingled(true);
-          }
-          if (device === "led" && apiValue === "off") {
-            console.log("vo duoc roi nhe");
-            setloadingled(false);
-          }
-          if (device === "fan" && apiValue === "on") {
-            setloadingfan(true);
-          }
-          if (device === "fan" && apiValue === "off") {
-            setloadingfan(false);
-          }
-          if (device === "airConditioner" && apiValue === "on") {
-            setloadingair(true);
-          }
-          if (device === "airConditioner" && apiValue === "off") {
-            setloadingair(false);
-          }
-
-          console.log(
-            "pub thanh cong va da cap nhat state moi",
-            deviceStates,
-            loadingled,
-            loadingfan,
-            loadingair
-          );
-        } else {
-          console.log("dang gui lai api");
-          // Chờ 1 giây trước khi gọi lại
-          await new Promise((resolve) => setTimeout(resolve, 3000));
-        }
-      }
-    } catch (error) {
-      setDeviceStates((prev) => ({ ...prev, [device]: !newState }));
-      // Ẩn loading text khi lỗi
-      setLoadingText((prev) => ({ ...prev, [device]: "" }));
-    }
+    } catch (error) {}
   };
-  // xu ly doi loading xong moi bat tat nut
 
-  // Thêm useEffect này để fetch device states từ API
-
+  // Sensor data
   const [temp, setTemp] = useState(null);
   const [hump, setHump] = useState(null);
   const [light, setLight] = useState(null);
@@ -168,7 +157,9 @@ const Home = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("http://localhost:8000/api/datasensor/latest/");
+        const res = await fetch(
+          "http://192.168.70.133:8000/api/datasensor/latest/"
+        );
         const data = await res.json();
         setTemp(data.temperature);
         setHump(data.humidity);
@@ -181,27 +172,25 @@ const Home = () => {
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
-  //thong bao
+
+  // Light alert
   const [lightAlertActive, setLightAlertActive] = useState(false);
 
-  // Thêm useEffect cảnh báo ánh sáng (đặt sau useEffect fetch data)
   useEffect(() => {
     let intervalId;
 
     if (light !== null && light > 50) {
       setLightAlertActive(true);
 
-      // Gửi cảnh báo ngay lập tức
       toast.warning(`⚠️ Ánh sáng quá cao: ${light} lux`, {
         position: "top-right",
-        autoClose: false, // Không tự đóng
+        autoClose: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
-        toastId: "light-alert", // ID cố định để không tạo nhiều toast
+        toastId: "light-alert",
       });
 
-      // Cứ 3 giây gửi lại cảnh báo nếu ánh sáng vẫn cao
       intervalId = setInterval(() => {
         if (light > 50) {
           toast.warning(`⚠️ Ánh sáng quá cao: ${light} lux`, {
@@ -216,26 +205,23 @@ const Home = () => {
       }, 3000);
     } else {
       setLightAlertActive(false);
-      // Xóa cảnh báo khi ánh sáng trở lại bình thường
       toast.dismiss("light-alert");
     }
 
-    // Cleanup interval khi component unmount hoặc light thay đổi
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
       }
     };
-  }, [light]); // Chạy khi light thay đổi
+  }, [light]);
 
-  //thong bao
-  // Hàm màu gradient theo giá trị
+  // Color functions
   const getTemperatureColor = (value) => {
     if (value == null) return "#aaa";
-    const min = 15; // nhiệt độ thấp nhất
-    const max = 40; // nhiệt độ cao nhất
+    const min = 15;
+    const max = 40;
     const ratio = Math.min(Math.max((value - min) / (max - min), 0), 1);
-    return `rgb(${Math.floor(255 * ratio)}, 0, 0)`; // đỏ càng mạnh
+    return `rgb(${Math.floor(255 * ratio)}, 0, 0)`;
   };
 
   const getHumidityColor = (value) => {
@@ -243,7 +229,7 @@ const Home = () => {
     const min = 0;
     const max = 100;
     const ratio = Math.min(Math.max(value / max, 0), 1);
-    return `rgb(0, ${Math.floor(150 + 105 * ratio)}, 255)`; // xanh da trời đậm hơn
+    return `rgb(0, ${Math.floor(150 + 105 * ratio)}, 255)`;
   };
 
   const getLightColor = (value) => {
@@ -251,7 +237,7 @@ const Home = () => {
     const min = 0;
     const max = 1000;
     const ratio = Math.min(Math.max(value / max, 0), 1);
-    return `rgb(${Math.floor(255)}, ${Math.floor(255 * ratio)}, 0)`; // vàng càng mạnh
+    return `rgb(${Math.floor(255)}, ${Math.floor(255 * ratio)}, 0)`;
   };
 
   return (
@@ -306,9 +292,6 @@ const Home = () => {
                   }`}
                   onClick={() => handleDeviceToggle("led")}
                 >
-                  {/* <span className="toggle-text">
-                    {loadingled && deviceStates.led ? "ON" : "OFF"}
-                  </span> */}
                   <div className="toggle-slider"></div>
                 </button>
                 <span
@@ -318,9 +301,6 @@ const Home = () => {
                 >
                   💡
                 </span>
-                {loadingText.led && (
-                  <span className="loading-text">{loadingText.led}</span>
-                )}
               </div>
 
               {/* Quạt 3 cánh */}
@@ -332,9 +312,6 @@ const Home = () => {
                   }`}
                   onClick={() => handleDeviceToggle("fan")}
                 >
-                  {/* <span className="toggle-text">
-                    {deviceStates.fan && loadingfan ? "ON" : "OFF"}
-                  </span> */}
                   <div className="toggle-slider"></div>
                 </button>
                 <span
@@ -356,9 +333,6 @@ const Home = () => {
                     </g>
                   </svg>
                 </span>
-                {loadingText.fan && (
-                  <span className="loading-text">{loadingText.fan}</span>
-                )}
               </div>
 
               {/* Điều hòa */}
@@ -370,9 +344,6 @@ const Home = () => {
                   }`}
                   onClick={() => handleDeviceToggle("airConditioner")}
                 >
-                  {/* <span className="toggle-text">
-                    {deviceStates.airConditioner && loadingair ? "ON" : "OFF"}
-                  </span> */}
                   <div className="toggle-slider"></div>
                 </button>
                 <span
@@ -382,11 +353,6 @@ const Home = () => {
                 >
                   ❄️
                 </span>
-                {loadingText.airConditioner && (
-                  <span className="loading-text">
-                    {loadingText.airConditioner}
-                  </span>
-                )}
               </div>
             </div>
           </div>
