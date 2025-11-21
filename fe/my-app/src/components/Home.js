@@ -60,7 +60,7 @@ const Home = () => {
   // ✅ 2. Kết nối SSE để nhận realtime update từ backend
   useEffect(() => {
     const eventSource = new EventSource(
-      "http://192.168.70.133:8000/api/device/stream/"
+      "http://127.0.0.1:8000/api/device/stream/"
     );
 
     eventSource.onopen = () => {
@@ -141,7 +141,7 @@ const Home = () => {
       console.log("📤 Sending command:", payload);
 
       // Gửi lệnh lên backend
-      const response = await fetch("http://192.168.70.133:8000/api/device/", {
+      const response = await fetch("http://127.0.0.1:8000/api/device/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -158,7 +158,7 @@ const Home = () => {
     async function fetchData() {
       try {
         const res = await fetch(
-          "http://192.168.70.133:8000/api/datasensor/latest/"
+          "http://127.0.0.1:8000/api/datasensor/latest/"
         );
         const data = await res.json();
         setTemp(data.temperature);

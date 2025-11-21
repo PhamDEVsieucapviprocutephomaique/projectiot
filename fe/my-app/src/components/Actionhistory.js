@@ -35,7 +35,7 @@ const Actionhistory = () => {
         filterData.page_size = pageSize;
 
         const res = await fetch(
-          "http://192.168.70.133:8000/api/historyaction/countpage/",
+          "http://127.0.0.1:8000/api/historyaction/countpage/",
           {
             method: "POST",
             headers: {
@@ -82,7 +82,7 @@ const Actionhistory = () => {
         console.log("Filter API Request parameters:", filterData);
 
         const res = await fetch(
-          "http://192.168.70.133:8000/api/historyaction/filter/",
+          "http://127.0.0.1:8000/api/historyaction/filter/",
           {
             method: "POST",
             headers: {
@@ -142,7 +142,7 @@ const Actionhistory = () => {
         });
 
         const res = await fetch(
-          "http://192.168.70.133:8000/api/historyaction/search/",
+          "http://127.0.0.1:8000/api/historyaction/search/",
           {
             method: "POST",
             headers: {

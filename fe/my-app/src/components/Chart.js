@@ -33,7 +33,7 @@ const Chart = ({ isDarkMode = false }) => {
   useEffect(() => {
     const fetchChartData = async () => {
       try {
-        const res = await fetch("http://192.168.70.133:8000/api/datasensor/");
+        const res = await fetch("http://127.0.0.1:8000/api/datasensor/");
         const allData = await res.json();
 
         const latestData = allData

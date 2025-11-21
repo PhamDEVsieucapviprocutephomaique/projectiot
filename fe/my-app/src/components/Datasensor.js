@@ -24,7 +24,7 @@ const Datasensor = () => {
     async (pageSize = recordsPerPage) => {
       try {
         const res = await fetch(
-          "http://192.168.70.133:8000/api/datasensor/countpage/",
+          "http://127.0.0.1:8000/api/datasensor/countpage/",
           {
             method: "POST",
             headers: {
@@ -62,21 +62,18 @@ const Datasensor = () => {
           page: page,
           page_size: pageSize,
         });
-        const res = await fetch(
-          "http://192.168.70.133:8000/api/datasensor/sort/",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              attribute: attribute,
-              type: type,
-              page: page,
-              page_size: pageSize,
-            }),
-          }
-        );
+        const res = await fetch("http://127.0.0.1:8000/api/datasensor/sort/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            attribute: attribute,
+            type: type,
+            page: page,
+            page_size: pageSize,
+          }),
+        });
 
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
@@ -121,7 +118,7 @@ const Datasensor = () => {
           page_size: pageSize,
         });
         const res = await fetch(
-          "http://192.168.70.133:8000/api/datasensor/search/",
+          "http://127.0.0.1:8000/api/datasensor/search/",
           {
             method: "POST",
             headers: {
